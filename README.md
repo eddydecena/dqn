@@ -12,21 +12,23 @@ This implementation is base on up to date technologies and good practice:
 # Documentation
 
 ```python
-from dqn import Trainer
+from dqn import DQNAgent
+from dqn import Env
 
-trainer = Trainer(...)
+env = Env('name_env')
+agent = DQNAgent(...)
 
 # Training with all steps
-trainer.train(...)
-
-# Training step by step (no yet)
-for _ in range(100):
-    trainer.step(...)
+num_frames = 0
+while (num_frames < 30000000):
+    env.reset(...)
+    for _ in range(18000)
+        action = agent.get_actions(...)
+        env.step(action)
+        agent.learn(...)
+    
+    num_frames = agent.count
 
 # Evaluate with all steps
-trainer.eval(...)
-
-# Evaluate step by step (no yet)
-for _ in range(...):
-    trainer.eval_step(...)
+agent.eval(...)
 ```
