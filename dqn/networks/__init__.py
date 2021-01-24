@@ -1,1 +1,1 @@
-from .dueling_network import DuelingDQN
+from .dueling_network import build_q_network

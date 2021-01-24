@@ -267,3 +267,7 @@ test.py
 example_save
 
 note.txt
+
+agent-checkpoints
+
+trainer-tensorboard

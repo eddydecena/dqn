@@ -1,1 +1,1 @@
-from .agents import DQNAgent
+from .agents.agent import Agent

@@ -41,3 +41,5 @@ class GameWrapper():
             return processed_frame, reward, terminal, life_lost, self.env.render(render_mode)
         elif render_mode == 'human':
             self.env.render()
+        
+        return processed_frame, reward, terminal, life_lost

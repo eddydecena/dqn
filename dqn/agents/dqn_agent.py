@@ -12,11 +12,11 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model
 
 from dqn.replay_memory import ReplayMemory
-from dqn.networks.dueling_network import DuelingDQN
+from dqn.networks.dueling_network import build_q_network
 
 class DQNAgent():
-    _save_main_q_file = '/main_q.h5'
-    _save_target_q_file = '/target_q.h5'
+    _save_main_q_file = '/main_q.model'
+    _save_target_q_file = '/target_q.model'
     _save_meta_file = '/meta.json'
     
     def __init__(
@@ -66,8 +66,14 @@ class DQNAgent():
                                                 history_length=self.history_length,
                                                 use_per=self.use_per)
         
-        self.main_q: Model = DuelingDQN(self.n_actions, self.input_shape, self.history_length)
-        self.target_q: Model = DuelingDQN(self.n_actions, self.input_shape, self.history_length)
+        # self.main_q: Model = DuelingDQN(self.n_actions, self.input_shape, self.history_length)
+        # self.target_q: Model = DuelingDQN(self.n_actions, self.input_shape, self.history_length)
+        
+        # self.main_q.build((self.input_shape[0], self.input_shape[1], self.history_length))
+        # self.target_q.build((self.input_shape[0], self.input_shape[1], self.history_length))
+        
+        self.main_q = build_q_network(self.n_actions, self.input_shape, self.history_length)
+        self.target_q = build_q_network(self.n_actions, self.input_shape, self.history_length)
         
         self.main_q.compile(optimizer=Adam(self.learning_rate), loss=Huber())
         self.target_q.compile(optimizer=Adam(self.learning_rate), loss=Huber())
@@ -88,7 +94,8 @@ class DQNAgent():
         if np.random.rand() < eps:
             return np.random.randint(0, self.n_actions)
         
-        q_value = self.main_q.predict(np.array([state.reshape((-1, self.input_shape[0], self.input_shape[1], self.history_length))]))[0]
+        q_value = self.main_q.predict(state.reshape((-1, self.input_shape[0], self.input_shape[1], self.history_length)))[0]
+        
         return q_value.argmax()
     
     def get_intermediate_representation():
@@ -108,7 +115,7 @@ class DQNAgent():
         else:
             states, actions, rewards, new_states, terminal = self.replay_buffer.get_minibatch(self.batch_size, priority_scale=priority_scale)
         
-        main_q_values = self.main_q.predict(new_states)
+        main_q_values = self.main_q.predict(new_states).argmax(axis=1)
         
         future_q_values = self.target_q.predict(new_states)
         double_q = future_q_values[range(self.batch_size), main_q_values] # bad use of range
@@ -119,7 +126,7 @@ class DQNAgent():
             q_values = self.main_q(states)
             
             #
-            one_hot_actions = to_categorical(actions, self.n_actions, dtype=tf.float32)
+            one_hot_actions = to_categorical(actions, self.n_actions, dtype=np.float32)
             Q = tf.reduce_sum(tf.multiply(q_values, one_hot_actions), axis=1)
             
             error = Q - target_q
@@ -128,7 +135,7 @@ class DQNAgent():
             if self.use_per:
                 loss = tf.reduce_mean(loss * importance)
 
-        gradients = tape.gradient(loss, self.mean_q.trainable_variable)
+        gradients = tape.gradient(loss, self.main_q.trainable_variables)
         self.main_q.optimizer.apply_gradients(zip(gradients, self.main_q.trainable_variables))
         
         if self.use_per:

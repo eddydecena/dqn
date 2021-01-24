@@ -12,23 +12,13 @@ This implementation is base on up to date technologies and good practice:
 # Documentation
 
 ```python
-from dqn import DQNAgent
-from dqn import Env
+from dqn import Trainer
 
-env = Env('name_env')
-agent = DQNAgent(...)
+trainer = Trainer('BreakoutDeterministic-v4')
 
-# Training with all steps
-num_frames = 0
-while (num_frames < 30000000):
-    env.reset(...)
-    for _ in range(18000)
-        action = agent.get_actions(...)
-        env.step(action)
-        agent.learn(...)
-    
-    num_frames = agent.count
+trainer.run(render=True)
 
-# Evaluate with all steps
-agent.eval(...)
+trainer.eval(render=True) # not yet
+
+trainer.play()
 ```
