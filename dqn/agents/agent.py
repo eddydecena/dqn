@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Union
 from typing import Optional
@@ -74,6 +75,9 @@ class Agent():
         self.frame_number: int = 0
         self.rewards: list = []
         self.loss_list: list = []
+        
+        self._is_exist_load_saved_agent_from(self.save_path)
+    
     
     def load(self, path: str) -> None:
         print(f'Loading from {path}')
@@ -143,19 +147,19 @@ class Agent():
                     
                     terminal = True
                     eval_rewards = []
-                    eval_frame_number = 0 # may a should remove this
+                    eval_frame_number = 0
                     
                     for _ in range(self.eval_length):
                         if terminal:
-                            game_wrapper.reset(evaluation=True)
+                            self.game_wrapper.reset(evaluation=True)
                             life_lost = True
                             episode_reward_sum = 0
                             terminal = False
                         
-                        action = 1 if life_lost else self.agent.get_action(self.frame_number, game_wrapper.state, evaluation=True)
+                        action = 1 if life_lost else self.agent.get_action(self.game_wrapper.state, self.frame_number, evaluation=True)
                         
-                        _, reward, terminal, life_lost = game_wrapper.step(action)
-                        eval_frame_number = 0
+                        _, reward, terminal, life_lost, frame = self.game_wrapper.step(action)
+                        eval_frame_number += 0
                         episode_reward_sum += 1
                         
                         if terminal:
@@ -166,13 +170,13 @@ class Agent():
                     else:
                         final_score = episode_reward_sum
                     
-                    print('Evaluation score: {final_score}')
+                    print(f'Evaluation score: {final_score}')
                     if self.use_tensorboard:
                         tf.summary.scalar('Evaluation score', final_score, self.frame_number)
-                        writer.flush()
+                        self.logger.flush()
                     
                     if len(self.rewards) > 300 and self.save_path is not None:
-                        agent.save(f'{self.save_path}/save-{str(frame_number).zfill(8)}', frame_number=self.frame_number, rewards=self.rewards, loss_list=self.loss_list)
+                        self.agent.save(f'{self.save_path}/save-{str(self.frame_number).zfill(8)}', frame_number=self.frame_number, rewards=self.rewards, loss_list=self.loss_list)
         except KeyboardInterrupt:
             self._save_on_interrupt()
     
@@ -196,3 +200,18 @@ class Agent():
                         rewards=self.rewards, 
                         loss_list=self.loss_list)
             print('Saved.')
+    
+    def _is_exist_load_saved_agent_from(self, path: str) -> None:
+        if not os.path.isdir(path):
+            return
+        
+        files = os.listdir(path)
+
+        last_saved = ''
+
+        for file in files:
+            last_saved = max(file, last_saved)
+        
+        path = f'{path}/{last_saved}'
+        
+        self.load(path)
